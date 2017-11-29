@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import _ from 'lodash';
 import '.\\index.css';
 
 function SeachField (props) {
@@ -13,7 +14,7 @@ function SeachField (props) {
                     </span>
                     <input type="text" 
                         value={props.searchString} 
-                        onChange={props.handleChange} 
+                        onChange={props.onChange}
                         className="form-control" 
                         placeholder="Codigo Usuário" 
                         aria-describedby="basic-addon1"/>
@@ -47,14 +48,6 @@ function StageComponent(props) {
     );
 }
 
-function getAsync() {
-    return fetch('http://localhost:8080/users/202/stages')
-    .then((response) => response.json()
-        .then((responseJson) => {
-            return responseJson
-    }));
-}
-
 class UserStages extends React.Component {
     constructor() {
         super();
@@ -73,26 +66,43 @@ class UserStages extends React.Component {
                     },
                   ]   
             },
-            "searchString" : "",
+            searchString : "",
         }
+        this.getAsync = _.debounce(this.getAsync,800)
     }
 
-    componentDidMount() {
-        getAsync().then(data =>{
+    getAsync(userId) {
+        return fetch(`http://localhost:8080/users/${userId}/stages`)
+        .then((response) => response.json()
+            .then((responseJson) => {
+                return responseJson
+        }));
+    }
+    
+    componentWillUpdate(nextProps, nextState) {
+        this.getAsync(nextState.searchString) 
+        .then(data =>{
             this.setState(data)
         });
     }
 
+    componentDidMount() {
+        if (this.state.searchString.length > 0) {
+            this.getAsync(this.state.searchString)
+            .then(data =>{
+                this.setState(data)
+            });
+        }
+    }
+
     handleChange(e) {
-        this.setState({
-            "searchString" : e.target.value
-        });
+        this.setState({searchString : e.target.value}); 
     }
 
     render() {
         return (
         <div className="container">
-            <SeachField onChange={() => this.handleChange}
+            <SeachField onChange={(e) => this.handleChange(e)}
                 searchString={this.state.searchString}/>
             <div className="panel panel-default">
                 <div className="panel-heading">
